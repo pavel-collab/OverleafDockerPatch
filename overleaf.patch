@@ -1,0 +1,55 @@
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 93deef25cc..fdab7cfdde 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -3,7 +3,13 @@ services:
+     restart: always
+     # Server Pro users:
+     # image: quay.io/sharelatex/sharelatex-pro
+-    image: sharelatex/sharelatex
++    # Используем локальный образ на базе sharelatex/sharelatex:latest
++    # с доустановленными TeX Live пакетами — см. ./Dockerfile
++    build:
++      context: .
++      dockerfile: Dockerfile
++    image: sharelatex-custom:latest
++    platform: linux/amd64
+     container_name: sharelatex
+     depends_on:
+       mongo:
+@@ -76,14 +82,14 @@ services:
+       ## so the following environment variables must be commented out to avoid compile issues.
+       ##
+       ## Sandboxed Compiles: https://docs.overleaf.com/on-premises/configuration/overleaf-toolkit/server-pro-only-configuration/sandboxed-compiles
+-      SANDBOXED_COMPILES: "true"
++      # SANDBOXED_COMPILES: "true"
+       ### Bind-mount source for /var/lib/overleaf/data/compiles inside the container.
+-      SANDBOXED_COMPILES_HOST_DIR_COMPILES: "/home/user/sharelatex_data/data/compiles"
++      # SANDBOXED_COMPILES_HOST_DIR_COMPILES: "/home/user/sharelatex_data/data/compiles"
+       ### Bind-mount source for /var/lib/overleaf/data/output inside the container.
+-      SANDBOXED_COMPILES_HOST_DIR_OUTPUT: "/home/user/sharelatex_data/data/output"
++      # SANDBOXED_COMPILES_HOST_DIR_OUTPUT: "/home/user/sharelatex_data/data/output"
+       ### Backwards compatibility (before Server Pro 5.5)
+-      DOCKER_RUNNER: "true"
+-      SANDBOXED_COMPILES_SIBLING_CONTAINERS: "true"
++      # DOCKER_RUNNER: "true"
++      # SANDBOXED_COMPILES_SIBLING_CONTAINERS: "true"
+ 
+       ## Works with test LDAP server shown at bottom of docker compose
+       # OVERLEAF_LDAP_URL: 'ldap://ldap:389'
+@@ -103,9 +109,14 @@ services:
+ 
+   mongo:
+     restart: always
+-    image: mongo:6.0
++    image: mongo:8.0
+     container_name: mongo
+     command: "--replSet overleaf"
++    # Пробрасываем только на 127.0.0.1, чтобы Mongo не торчал во внешнюю сеть.
++    # Для подключения из VS Code используй строку с directConnection=true:
++    #   mongodb://localhost:27017/?directConnection=true
++    ports:
++      - "127.0.0.1:27017:27017"
+     volumes:
+       - ~/mongo_data:/data/db
+       - ./bin/shared/mongodb-init-replica-set.js:/docker-entrypoint-initdb.d/mongodb-init-replica-set.js
